@@ -634,6 +634,10 @@ def build(bazel, arguments):
     )
 
     bazel_command_line.set_configuration(arguments.configuration)
+    # Svipe: a simulator build is never signed, so it needs no provisioning profiles (and expired
+    # ones would fail it).
+    if arguments.configuration.startswith('debug_sim'):
+        bazel_command_line.set_disable_provisioning_profiles()
     if arguments.embedWatchApp:
         if arguments.configuration in ('debug_arm64', 'release_arm64'):
             if arguments.watchApiId is None or arguments.watchApiHash is None:
