@@ -206,6 +206,15 @@ typedef enum {
                 englishStrings[key] = key;
             }
         }
+        // Svipe: the tour names the app on the first slides; "Telegram" there means the app in the
+        // user's hand (the same keys are rebranded in GenerateStrings' svipeBrand allow-list).
+        NSRegularExpression *svipeBrand = [NSRegularExpression regularExpressionWithPattern:@"\\bTelegram\\b" options:0 error:nil];
+        for (NSString *key in @[@"Tour.Title1", @"Tour.Text2", @"Tour.Text3", @"Tour.Text4", @"Tour.Text5", @"Tour.Text6"]) {
+            NSString *value = englishStrings[key];
+            if (value != nil) {
+                englishStrings[key] = [svipeBrand stringByReplacingMatchesInString:value options:0 range:NSMakeRange(0, value.length) withTemplate:@"Svipe"];
+            }
+        }
         _englishStrings = englishStrings;
         
         _headlines = @[ _englishStrings[@"Tour.Title1"], _englishStrings[@"Tour.Title2"],  _englishStrings[@"Tour.Title6"], _englishStrings[@"Tour.Title3"], _englishStrings[@"Tour.Title4"], _englishStrings[@"Tour.Title5"]];

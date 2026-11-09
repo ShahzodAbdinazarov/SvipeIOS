@@ -30,11 +30,16 @@ python3 build-system/Make/Make.py --cacheDir="$HOME/telegram-bazel-cache" build 
 
 OUT=$(mktemp -d)
 unzip -qo bazel-bin/Telegram/Telegram.ipa -d "$OUT"
-DEV=$(xcrun simctl list devices booted | grep -oE "[0-9A-F-]{36}" | head -1)
+DEV=$(xcrun simctl list devices booted | grep -oE "[0-9A-F-]{36}" | head -1 || true)
 if [ -z "$DEV" ]; then
     DEV=$(xcrun simctl list devices available | grep -m1 iPhone | grep -oE "[0-9A-F-]{36}")
     xcrun simctl boot "$DEV"
 fi
 xcrun simctl install "$DEV" "$OUT"/Payload/*.app
+# `simctl install` over an existing install keeps the old embedded frameworks (their own
+# CFBundleVersion never changes), so a rebuild would silently run yesterday's code. Sync the bundle
+# in place: the app's data container is separate, so a signed-in session survives.
+xcrun simctl terminate "$DEV" ph.telegra.Telegraph 2>/dev/null || true
+rsync -a --delete --checksum "$OUT"/Payload/Telegram.app/ "$(xcrun simctl get_app_container "$DEV" ph.telegra.Telegraph)/"
 xcrun simctl launch "$DEV" ph.telegra.Telegraph
 echo "running on simulator $DEV (screenshot: xcrun simctl io $DEV screenshot shot.png)"

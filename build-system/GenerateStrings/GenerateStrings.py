@@ -445,6 +445,25 @@ static NSString * _Nonnull getPluralizationSuffix(uint32_t lc, int32_t value) {
     }
 }
 
+// Svipe: the strings where upstream Telegram names the app itself say "Svipe". The value is kept in
+// whatever language the cloud pack returned and only the brand inside it is rewritten ("Telegram" is
+// Latin script in every pack). An explicit allow-list, as on Android (SvipeBrand.java): most strings
+// that mention Telegram mean the service, its servers or another official client, and stay true as
+// written for a third-party client. Add a key only when every "Telegram" in it means this app.
+static NSString * _Nonnull svipeBrand(NSString * _Nonnull key, NSString * _Nonnull value) {
+    static NSSet<NSString *> *keys = nil;
+    static NSRegularExpression *brand = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        keys = [NSSet setWithArray:@[@"Tour.Title1", @"Tour.Text2", @"Tour.Text3", @"Tour.Text4", @"Tour.Text5", @"Tour.Text6", @"Contacts.AccessDeniedError", @"Contacts.AccessDeniedHelpLandscape", @"Contacts.AccessDeniedHelpPortrait", @"Contacts.PermissionsText", @"Contacts.LimitedAccess.Text", @"AccessDenied.Contacts", @"AccessDenied.VoiceMicrophone", @"AccessDenied.VideoMicrophone", @"AccessDenied.MicrophoneRestricted", @"AccessDenied.Camera", @"AccessDenied.CameraRestricted", @"AccessDenied.PhotosAndVideos", @"AccessDenied.SaveMedia", @"AccessDenied.PhotosRestricted", @"AccessDenied.LocationDenied", @"AccessDenied.LocationDisabled", @"AccessDenied.LocationTracking", @"AccessDenied.CallMicrophone", @"AccessDenied.VideoMessageCamera", @"AccessDenied.VideoMessageMicrophone", @"AccessDenied.LocationAlwaysDenied", @"AccessDenied.Wallpapers", @"AccessDenied.VideoCallCamera", @"AccessDenied.QrCode", @"AccessDenied.QrCamera", @"AccessDenied.LocationPreciseDenied", @"AccessDenied.LocationWeather", @"AccessDenied.AgeVerificationCamera", @"Attachment.LimitedMediaAccessText", @"Attachment.CameraAccessText", @"Media.LimitedAccessText", @"Story.Camera.AccessPlaceholderTitle", @"Permissions.CellularDataText.v0", @"Map.HomeAndWorkInfo", @"PasscodeSettings.EncryptDataHelp", @"PasscodeSettings.LockTelegram", @"EnterPasscode.EnterTitle", @"EnterPasscode.EnterPasscode", @"EnterPasscode.TouchId", @"DialogList.PasscodeLockHelp", @"Passcode.AppLockedAlert", @"Intents.ErrorLockedText", @"Calls.RatingTitle", @"Call.StatusIncoming", @"Call.StatusOngoing", @"Call.PhoneCallInProgressMessage", @"UserInfo.TelegramCall", @"UserInfo.TelegramVideoCall", @"Chat.Context.Phone.TelegramVoiceCall", @"Chat.Context.Phone.TelegramVideoCall", @"Privacy.Calls.IntegrationHelp", @"Cache.Indexing", @"ClearCache.StorageCache", @"ClearCache.StorageServiceFiles", @"ClearCache.ClearCache", @"StorageManagement.DescriptionChatUsage", @"StorageManagement.DescriptionAppUsage", @"AppUpgrade.Running", @"Update.Title", @"Update.AppVersion", @"Update.UpdateApp", @"Login.ErrorAppOutdated", @"Passport.UpdateRequiredError", @"Conversation.UnsupportedMediaPlaceholder", @"Conversation.UnsupportedMedia.Text", @"Story.UnsupportedText", @"Story.UnsupportedAction", @"Gift.Transfer.UpdateRequired.Text", @"ShareFileTip.Text", @"Conversation.FileHowToText", @"Share.AuthDescription", @"ChatImportActivity.OpenApp", @"Widget.GalleryTitle", @"Application.Name", @"PowerSavingScreen.OptionAutoplayEffectsText", @"WebBrowser.Telegram", @"WebBrowser.ClearCookies.Info", @"WebBrowser.OpenLinksInfo"]];
+        brand = [NSRegularExpression regularExpressionWithPattern:@"\\\\bTelegram\\\\b" options:0 error:nil];
+    });
+    if (![keys containsObject:key]) {
+        return value;
+    }
+    return [brand stringByReplacingMatchesInString:value options:0 range:NSMakeRange(0, value.length) withTemplate:@"Svipe"];
+}
+
 static NSString * _Nonnull getSingle(_PresentationStrings * _Nullable strings, NSString * _Nonnull key,
     bool * _Nullable isFound) {
     NSString *result = nil;
@@ -480,6 +499,7 @@ static NSString * _Nonnull getSingle(_PresentationStrings * _Nullable strings, N
             *isFound = false;
         }
     } else {
+        result = svipeBrand(key, result);
         if (isFound) {
             *isFound = true;
         }
