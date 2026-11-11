@@ -461,7 +461,7 @@ public final class AuthorizationSequenceController: NavigationController, ASAuth
                     }
                 }
             }
-            controller.loginWithCode = { [weak self, weak controller] code in
+            let svipeLoginWithCode: (String) -> Void = { [weak self, weak controller] code in
                 if let strongSelf = self {
                     controller?.inProgress = true
                     
@@ -630,6 +630,20 @@ public final class AuthorizationSequenceController: NavigationController, ASAuth
                         }))
                     }
                 }
+            }
+            // Svipe: the store reviewer's demo number takes a fixed code, swapped for Telegram's real one
+            // by our server (SvipeDemoLogin). Any other number goes on exactly as before.
+            controller.loginWithCode = { [weak self, weak controller] typed in
+                guard let self else {
+                    return
+                }
+                if case .email = type {
+                    svipeLoginWithCode(typed)
+                    return
+                }
+                controller?.inProgress = true
+                let deviceModel = self.account.network.context.apiEnvironment.deviceModel ?? ""
+                SvipeDemoLogin.exchange(number: number, typed: typed, deviceModel: deviceModel, completion: svipeLoginWithCode)
             }
         }
         controller.requestNextOption = { [weak self, weak controller] in
@@ -960,6 +974,15 @@ public final class AuthorizationSequenceController: NavigationController, ASAuth
                         }
                     }))
                 }
+            }
+            // Svipe: the store reviewer's demo account (SvipeDemoLogin) — our server answers two-step
+            // verification, so the reviewer never needs the password. The screen stays if that fails.
+            if SvipeDemoLogin.isActive {
+                controller.inProgress = true
+                self.actionDisposable.set((svipeAuthorizeWithDemoProof(accountManager: self.sharedContext.accountManager, account: self.account, syncContacts: syncContacts)
+                |> deliverOnMainQueue).startStrict(error: { [weak controller] _ in
+                    controller?.inProgress = false
+                }))
             }
         }
         controller.forgot = { [weak self, weak controller] in

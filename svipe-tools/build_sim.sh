@@ -30,7 +30,9 @@ python3 build-system/Make/Make.py --cacheDir="$HOME/telegram-bazel-cache" build 
 
 OUT=$(mktemp -d)
 unzip -qo bazel-bin/Telegram/Telegram.ipa -d "$OUT"
-DEV=$(xcrun simctl list devices booted | grep -oE "[0-9A-F-]{36}" | head -1 || true)
+# SVIPE_SIM_DEVICE picks a specific simulator (e.g. a clean one for store screenshots).
+DEV="${SVIPE_SIM_DEVICE:-$(xcrun simctl list devices booted | grep -oE "[0-9A-F-]{36}" | head -1 || true)}"
+xcrun simctl boot "$DEV" 2>/dev/null || true
 if [ -z "$DEV" ]; then
     DEV=$(xcrun simctl list devices available | grep -m1 iPhone | grep -oE "[0-9A-F-]{36}")
     xcrun simctl boot "$DEV"

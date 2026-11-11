@@ -1146,7 +1146,12 @@ public enum AuthorizationPasswordVerificationError {
 }
 
 public func authorizeWithPassword(accountManager: AccountManager<TelegramAccountManagerTypes>, account: UnauthorizedAccount, password: String, syncContacts: Bool) -> Signal<Void, AuthorizationPasswordVerificationError> {
-    return verifyPassword(account, password: password)
+    return authorizeWithPasswordCheck(accountManager: accountManager, account: account, check: verifyPassword(account, password: password), syncContacts: syncContacts)
+}
+
+// Svipe: split out so the demo sign-in (SvipeDemoLogin) can send a proof computed by our server.
+func authorizeWithPasswordCheck(accountManager: AccountManager<TelegramAccountManagerTypes>, account: UnauthorizedAccount, check: Signal<Api.auth.Authorization, MTRpcError>, syncContacts: Bool) -> Signal<Void, AuthorizationPasswordVerificationError> {
+    return check
     |> `catch` { error -> Signal<Api.auth.Authorization, AuthorizationPasswordVerificationError> in
         if error.errorDescription.hasPrefix("FLOOD_WAIT") {
             return .fail(.limitExceeded)
